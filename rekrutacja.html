@@ -81,7 +81,7 @@
   </form>
 </main>
 
-<section class="py-12 bg-slate-200/50 border-t border-slate-300/50">
+    <section class="py-12 bg-slate-200/50 border-t border-slate-300/50">
         <div class="container mx-auto px-4 text-center space-y-4">
             <p class="text-xs tracking-widest uppercase text-slate-500 font-medium">Podziękowania za stworzenie strony</p>
             <div class="flex justify-center">
@@ -89,7 +89,6 @@
                     <img src="https://lifeinwarsaw.vercel.app/liw-content/logo_rakso_szerokie.svg" alt="RAKSO Web Development Logo" class="h-10 w-auto object-contain" onerror="this.src='https://placehold.co/200x50/eee/333?text=RAKSO+Web+Development'">
                 </a>
             </div>
-        </div>
     </section>
 
     <footer class="w-full py-8 px-4 md:px-12 bg-slate-200 border-t border-slate-300 text-center space-y-3">
@@ -122,6 +121,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+let selectedFiles = [];
 
 function getRecruitmentId() {
   const path = window.location.pathname;
@@ -270,23 +271,43 @@ function renderForm() {
     const max = Math.min(fu.maxFiles || 15, 15);
     fileSection.innerHTML = `
       <label class="text-sm font-semibold text-slate-700 block">Załączniki${fu.required ? ' *' : ''} <span class="text-slate-400 font-normal">(maks. ${max} plików)</span></label>
-      <input type="file" id="file-input" multiple class="field-input" ${fu.required ? 'data-required="true"' : ''}>
-      <div id="file-list" class="space-y-1"></div>
+      <input type="file" id="file-input" multiple class="field-input">
+      <div id="file-list" class="space-y-1 mt-2"></div>
     `;
     document.getElementById('file-input').addEventListener('change', (e) => {
-      const files = Array.from(e.target.files);
-      const listEl = document.getElementById('file-list');
-      if (files.length > max) {
+      const newFiles = Array.from(e.target.files);
+      if (selectedFiles.length + newFiles.length > max) {
         showError(`Możesz załączyć maksymalnie ${max} plików.`);
         e.target.value = '';
-        listEl.innerHTML = '';
         return;
       }
-      listEl.innerHTML = files.map(f => `<div class="file-chip"><span>${escHtml(f.name)}</span><span class="text-slate-400">${(f.size/1024/1024).toFixed(2)} MB</span></div>`).join('');
+      newFiles.forEach(file => {
+        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+          selectedFiles.push(file);
+        }
+      });
+      e.target.value = '';
+      renderFileList();
     });
   }
 
   document.getElementById('recruitment-form').addEventListener('submit', onSubmit);
+}
+
+window.removeFile = function(index) {
+  selectedFiles.splice(index, 1);
+  renderFileList();
+}
+
+function renderFileList() {
+  const listEl = document.getElementById('file-list');
+  if (!listEl) return;
+  listEl.innerHTML = selectedFiles.map((f, index) => `
+    <div class="file-chip">
+      <span>${escHtml(f.name)} <span class="text-slate-400">(${(f.size/1024/1024).toFixed(2)} MB)</span></span>
+      <button type="button" onclick="removeFile(${index})" class="text-red-600 hover:text-red-800 font-bold px-2"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  `).join('');
 }
 
 function escHtml(s){ const d=document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
@@ -308,9 +329,7 @@ async function onSubmit(e) {
   const fd = new FormData(form);
 
   const fu = recruitment.fileUpload || { enabled: false };
-  const fileInput = document.getElementById('file-input');
-  const files = fileInput ? Array.from(fileInput.files) : [];
-  if (fu.enabled && fu.required && files.length === 0) {
+  if (fu.enabled && fu.required && selectedFiles.length === 0) {
     showError('Załączenie przynajmniej jednego pliku jest wymagane.');
     return;
   }
@@ -327,8 +346,8 @@ async function onSubmit(e) {
     });
 
     const fileUrls = [];
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const f = selectedFiles[i];
       const path = `submissions/${recruitmentId}/${submissionId}/${i}_${f.name}`;
       const blob = await upload(path, f, {
         access: 'public',
