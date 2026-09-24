@@ -40,6 +40,15 @@
     <p class="text-slate-500 text-sm">Sprawdź, czy link jest poprawny.</p>
   </div>
 
+  <div id="list-state" class="hidden space-y-4">
+    <h1 class="text-2xl md:text-3xl font-black text-slate-900 text-center mb-6">Aktywne rekrutacje</h1>
+    <div id="recruitments-list-public" class="space-y-4"></div>
+    <div id="list-empty" class="hidden light-glass-card rounded-2xl p-10 text-center space-y-2">
+      <i class="fa-solid fa-inbox text-3xl text-slate-400"></i>
+      <p class="text-slate-500 text-sm">Obecnie nie ma żadnych aktywnych rekrutacji.</p>
+    </div>
+  </div>
+
   <div id="ended-state" class="hidden light-glass-card rounded-2xl p-10 text-center space-y-3">
     <i class="fa-solid fa-lock text-3xl text-red-600"></i>
     <h2 class="text-xl font-bold text-slate-900">Rekrutacja o tytule: <span id="ended-title"></span> została zakończona</h2>
@@ -76,7 +85,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, collection, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, getDocs, query, where, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { upload } from "https://esm.sh/@vercel/blob@0.27.0/client";
 
 const firebaseConfig = {
@@ -107,7 +116,7 @@ function genSubmissionId() {
 }
 
 function show(id) {
-  ['loading-state','notfound-state','ended-state','success-state','recruitment-form'].forEach(s => {
+  ['loading-state','notfound-state','list-state','ended-state','success-state','recruitment-form'].forEach(s => {
     document.getElementById(s).classList.toggle('hidden', s !== id);
   });
 }
@@ -117,7 +126,7 @@ let recruitmentId = null;
 
 async function init() {
   recruitmentId = getRecruitmentId();
-  if (!recruitmentId) { show('notfound-state'); return; }
+  if (!recruitmentId) { await showActiveList(); return; }
 
   try {
     const snap = await getDoc(doc(db, 'recruitments', recruitmentId));
@@ -143,6 +152,39 @@ async function init() {
   show('recruitment-form');
 }
 
+async function showActiveList() {
+  show('loading-state');
+  try {
+    const snap = await getDocs(query(collection(db, 'recruitments'), where('status', '==', 'active')));
+    const listEl = document.getElementById('recruitments-list-public');
+    const emptyEl = document.getElementById('list-empty');
+    listEl.innerHTML = '';
+
+    if (snap.empty) {
+      emptyEl.classList.remove('hidden');
+    } else {
+      emptyEl.classList.add('hidden');
+      snap.forEach(d => {
+        const r = d.data();
+        const card = document.createElement('a');
+        card.href = `/r/${d.id}`;
+        card.className = 'light-glass-card rounded-2xl p-6 flex items-center justify-between block hover:border-red-300 transition';
+        card.innerHTML = `
+          <div>
+            <p class="font-bold text-slate-900 text-lg">${escHtml(r.title || '(bez tytułu)')}</p>
+            ${r.description ? `<p class="text-slate-500 text-sm mt-1">${escHtml(r.description)}</p>` : ''}
+          </div>
+          <i class="fa-solid fa-arrow-right text-red-600"></i>`;
+        listEl.appendChild(card);
+      });
+    }
+    show('list-state');
+  } catch (e) {
+    console.error(e);
+    show('notfound-state');
+  }
+}
+
 function renderForm() {
   document.getElementById('rec-title').textContent = recruitment.title || '';
   document.getElementById('rec-desc').textContent = recruitment.description || '';
@@ -164,7 +206,6 @@ function renderForm() {
   staticWrap.innerHTML = staticHtml || '';
   if (!staticHtml) staticWrap.classList.add('hidden');
 
-  // dynamic questions
   const qWrap = document.getElementById('dynamic-questions');
   const questions = recruitment.questions || [];
   qWrap.innerHTML = questions.map((q, i) => {
