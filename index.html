@@ -77,10 +77,10 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, collection, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { upload } from "https://esm.sh/@vercel/blob@0.27.0/client";
 
 const firebaseConfig = {
-apiKey: "AIzaSyBsqvahMIgg4TcCdKNBWn85AUBa0q84gT0",
+  apiKey: "AIzaSyBsqvahMIgg4TcCdKNBWn85AUBa0q84gT0",
   authDomain: "lifeinwarsaw-rekrutacje.firebaseapp.com",
   projectId: "lifeinwarsaw-rekrutacje",
   storageBucket: "lifeinwarsaw-rekrutacje.firebasestorage.app",
@@ -90,7 +90,6 @@ apiKey: "AIzaSyBsqvahMIgg4TcCdKNBWn85AUBa0q84gT0",
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 function getRecruitmentId() {
   const path = window.location.pathname;
@@ -165,6 +164,7 @@ function renderForm() {
   staticWrap.innerHTML = staticHtml || '';
   if (!staticHtml) staticWrap.classList.add('hidden');
 
+  // dynamic questions
   const qWrap = document.getElementById('dynamic-questions');
   const questions = recruitment.questions || [];
   qWrap.innerHTML = questions.map((q, i) => {
@@ -266,10 +266,11 @@ async function onSubmit(e) {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       const path = `submissions/${recruitmentId}/${submissionId}/${i}_${f.name}`;
-      const sref = ref(storage, path);
-      await uploadBytes(sref, f);
-      const url = await getDownloadURL(sref);
-      fileUrls.push({ name: f.name, url });
+      const blob = await upload(path, f, {
+        access: 'public',
+        handleUploadUrl: '/api/blob-upload'
+      });
+      fileUrls.push({ name: f.name, url: blob.url });
     }
 
     const email = fd.get('email') || '';
