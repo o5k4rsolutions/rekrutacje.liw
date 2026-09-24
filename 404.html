@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life in Warsaw - Strona nie znaleziona (404)</title>
+<link rel="icon" type="image/x-icon" href="liw-content/liw_zakoch-2.svg">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-light.ttf') format('truetype');font-weight:300;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-medium.ttf') format('truetype');font-weight:500;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-bold.ttf') format('truetype');font-weight:700;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-black.ttf') format('truetype');font-weight:900;}
+  body{font-family:'Engram Warsaw',sans-serif;background:radial-gradient(circle at top,#f8fafc 0%,#e2e8f0 100%);color:#1e293b;min-height:100vh;}
+  .light-glass-card{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(226,232,240,.8);box-shadow:0 10px 25px -5px rgba(0,0,0,.05);}
+</style>
+</head>
+<body class="flex flex-col antialiased justify-between">
+
+<header class="w-full py-6 px-4 md:px-12 flex items-center justify-center border-b border-slate-200 bg-white/70 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+  <a href="https://lifeinwarsaw.vercel.app/">
+    <img src="https://lifeinwarsaw.vercel.app/liw-content/image-3.svg" alt="Life in Warsaw" class="h-10 w-auto filter brightness-0" onerror="this.src='https://placehold.co/150x50/333/fff?text=Life+In+Warsaw'">
+  </a>
+</header>
+
+<main class="flex-grow container mx-auto px-4 py-16 md:py-24 max-w-xl w-full flex items-center justify-center">
+  <div class="light-glass-card rounded-2xl p-10 md:p-14 text-center space-y-6 w-full shadow-xl">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-50 text-red-600 mb-2 border border-red-100 shadow-inner">
+      <i class="fa-solid fa-triangle-exclamation text-4xl"></i>
+    </div>
+    
+    <div class="space-y-2">
+      <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Nie znaleziono strony</h1>
+      <p class="text-slate-500 text-base max-w-md mx-auto">
+        Strona, której szukasz nie istnieje, została przeniesiona lub podano nieprawidłowy adres.
+      </p>
+    </div>
+
+    <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a href="https://lifeinwarsaw.vercel.app/" class="w-full sm:w-auto px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition shadow-lg shadow-red-600/20 text-center flex items-center justify-center gap-2">
+        <i class="fa-solid fa-house"></i> Strona główna
+      </a>
+      <button onclick="window.history.back()" class="w-full sm:w-auto px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition border border-slate-200 text-center flex items-center justify-center gap-2">
+        <i class="fa-solid fa-arrow-left"></i> Wróć wstecz
+      </button>
+    </div>
+  </div>
+</main>
+
+<section class="py-12 bg-slate-200/50 border-t border-slate-300/50">
+    <div class="container mx-auto px-4 text-center space-y-4">
+        <p class="text-xs tracking-widest uppercase text-slate-500 font-medium">Podziękowania za stworzenie strony</p>
+        <div class="flex justify-center">
+            <a href="https://lifeinwarsaw.vercel.app/" rel="noopener noreferrer" class="inline-block p-2 opacity-90 hover:opacity-100 transition duration-300">
+                <img src="https://lifeinwarsaw.vercel.app/liw-content/logo_rakso_szerokie.svg" alt="RAKSO Web Development Logo" class="h-10 w-auto object-contain" onerror="this.src='https://placehold.co/200x50/eee/333?text=RAKSO+Web+Development'">
+            </a>
+        </div>
+    </div>
+</section>
+
+<footer class="w-full py-8 px-4 md:px-12 bg-slate-200 border-t border-slate-300 text-center space-y-3">
+    <div class="container mx-auto max-w-3xl space-y-2">
+        <p class="text-xs text-red-700 font-medium bg-red-600/10 py-2 px-4 rounded-lg border border-red-600/20 inline-block">
+            UWAGA! Ta strona nie jest oficjalną stroną Miasta Stołecznego Warszawa.
+        </p>
+        <p class="text-sm text-slate-600">
+            © 2026 Life in Warsaw. Wszelkie prawa zastrzeżone.
+        </p>
+        <p class="text-xs text-slate-500 font-light">
+            Wykonanie: RAKSO Web Development
+        </p>
+    </div>
+</footer>
+
+</body>
+</html>
