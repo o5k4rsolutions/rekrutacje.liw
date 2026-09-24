@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/r/:id", "destination": "/index.html" }
+    { "source": "/r/:id", "destination": "/rekrutacja.html" }
   ]
 }
