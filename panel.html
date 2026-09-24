@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life in Warsaw - Panel Rekrutacji</title>
+<link rel="icon" type="image/x-icon" href="liw-content/liw_zakoch-2.svg">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-light.ttf') format('truetype');font-weight:300;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-medium.ttf') format('truetype');font-weight:500;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-bold.ttf') format('truetype');font-weight:700;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-black.ttf') format('truetype');font-weight:900;}
+  body{font-family:'Engram Warsaw',sans-serif;background:radial-gradient(circle at top,#f8fafc 0%,#e2e8f0 100%);color:#1e293b;min-height:100vh;}
+  .light-glass-card{background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border:1px solid rgba(226,232,240,.8);box-shadow:0 10px 25px -5px rgba(0,0,0,.05);}
+  .field-input{width:100%;padding:.6rem .9rem;border-radius:.6rem;border:1px solid #e2e8f0;background:#fff;font-size:.9rem;}
+  .field-input:focus{outline:none;border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.12);}
+  .btn-primary{background:#dc2626;color:#fff;font-weight:700;padding:.6rem 1.2rem;border-radius:.7rem;transition:.2s;}
+  .btn-primary:hover{background:#b91c1c;}
+  .btn-secondary{background:#e2e8f0;color:#334155;font-weight:600;padding:.6rem 1.2rem;border-radius:.7rem;transition:.2s;}
+  .btn-secondary:hover{background:#cbd5e1;}
+  .badge{padding:.2rem .6rem;border-radius:999px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+  .spinner{border:3px solid #e2e8f0;border-top-color:#dc2626;border-radius:50%;width:2.5rem;height:2.5rem;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .tab-btn.active{color:#dc2626;border-bottom:2px solid #dc2626;}
+</style>
+</head>
+<body class="antialiased">
+
+<header class="w-full py-4 px-4 md:px-10 flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+  <div class="flex items-center gap-3">
+    <img src="https://lifeinwarsaw.vercel.app/liw-content/image-3.svg" alt="Life in Warsaw" class="h-8 w-auto filter brightness-0" onerror="this.src='https://placehold.co/150x50/333/fff?text=Life+In+Warsaw'">
+    <span class="text-sm font-bold text-slate-500 border-l border-slate-300 pl-3">Panel Rekrutacji</span>
+  </div>
+  <div id="user-box" class="hidden items-center gap-3">
+    <span id="user-email" class="text-xs text-slate-500"></span>
+    <button id="logout-btn" class="btn-secondary text-xs">Wyloguj</button>
+  </div>
+</header>
+
+<main class="container mx-auto px-4 py-10 max-w-5xl">
+
+  <div id="login-view" class="hidden max-w-sm mx-auto light-glass-card rounded-2xl p-8 mt-16 space-y-5">
+    <h1 class="text-xl font-black text-center">Logowanie</h1>
+    <input id="login-email" type="email" placeholder="E-mail" class="field-input">
+    <input id="login-pass" type="password" placeholder="Hasło" class="field-input">
+    <div id="login-error" class="hidden text-red-600 text-xs font-medium"></div>
+    <button id="login-btn" class="btn-primary w-full">Zaloguj</button>
+  </div>
+
+  <div id="loading-view" class="flex justify-center py-24"><div class="spinner"></div></div>
+
+  <div id="forbidden-view" class="hidden max-w-sm mx-auto light-glass-card rounded-2xl p-8 mt-16 text-center space-y-3">
+    <i class="fa-solid fa-ban text-3xl text-red-600"></i>
+    <p class="text-sm text-slate-600">To konto nie ma uprawnień administratora.</p>
+    <button id="forbidden-logout-btn" class="btn-secondary">Wyloguj</button>
+  </div>
+
+  <div id="dashboard-view" class="hidden space-y-8">
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-black">Rekrutacje</h2>
+      <button id="new-recruitment-btn" class="btn-primary"><i class="fa-solid fa-plus mr-2"></i>Nowa rekrutacja</button>
+    </div>
+    <div id="recruitments-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+  </div>
+
+  <div id="editor-view" class="hidden space-y-6">
+    <button id="back-to-dashboard" class="text-sm text-slate-500 hover:text-red-600"><i class="fa-solid fa-arrow-left mr-1"></i> Wróć</button>
+    <div class="light-glass-card rounded-2xl p-6 space-y-4">
+      <input id="ed-title" class="field-input font-bold text-lg" placeholder="Tytuł rekrutacji">
+      <textarea id="ed-desc" class="field-input" rows="2" placeholder="Krótki opis (widoczny na formularzu)"></textarea>
+      <div class="flex flex-wrap gap-4 pt-2">
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="ed-email" class="accent-red-600 w-4 h-4"> Zbieraj e-mail</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="ed-roblox" class="accent-red-600 w-4 h-4"> Zbieraj nick Roblox</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="ed-discord" class="accent-red-600 w-4 h-4"> Zbieraj nick Discord</label>
+      </div>
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <div>
+          <label class="text-xs font-semibold text-slate-500 block mb-1">Data automatycznego zakończenia (opcjonalnie)</label>
+          <input id="ed-enddate" type="datetime-local" class="field-input">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500 block mb-1">Status</label>
+          <select id="ed-status" class="field-input">
+            <option value="active">Aktywna</option>
+            <option value="ended">Zakończona</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="light-glass-card rounded-2xl p-6 space-y-4">
+      <label class="text-xs font-semibold text-slate-500 block">Załączniki</label>
+      <div class="flex flex-wrap items-center gap-4">
+        <select id="ed-file-mode" class="field-input w-auto">
+          <option value="disabled">Brak możliwości wysłania plików</option>
+          <option value="optional">Opcjonalne</option>
+          <option value="required">Obowiązkowe</option>
+        </select>
+        <div class="flex items-center gap-2 text-sm">
+          <span>Maks. plików:</span>
+          <input id="ed-file-max" type="number" min="1" max="15" value="5" class="field-input w-20">
+        </div>
+      </div>
+    </div>
+
+    <div class="light-glass-card rounded-2xl p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <label class="text-xs font-semibold text-slate-500">Pytania</label>
+        <button id="add-question-btn" class="btn-secondary text-xs"><i class="fa-solid fa-plus mr-1"></i>Dodaj pytanie</button>
+      </div>
+      <div id="questions-editor" class="space-y-3"></div>
+    </div>
+
+    <div class="flex gap-3">
+      <button id="save-recruitment-btn" class="btn-primary flex-1">Zapisz rekrutację</button>
+    </div>
+  </div>
+
+  <div id="submissions-view" class="hidden space-y-6">
+    <button id="back-to-dashboard-2" class="text-sm text-slate-500 hover:text-red-600"><i class="fa-solid fa-arrow-left mr-1"></i> Wróć</button>
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h2 class="text-2xl font-black" id="sub-rec-title"></h2>
+        <p class="text-xs text-slate-500" id="sub-rec-link"></p>
+      </div>
+      <div class="flex gap-2">
+        <button id="copy-link-btn" class="btn-secondary text-sm"><i class="fa-solid fa-link mr-1"></i>Kopiuj link</button>
+        <button id="end-now-btn" class="btn-secondary text-sm bg-red-100 text-red-700 hover:bg-red-200"><i class="fa-solid fa-stop mr-1"></i>Zakończ teraz</button>
+      </div>
+    </div>
+    <div id="submissions-list" class="space-y-4"></div>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBsqvahMIgg4TcCdKNBWn85AUBa0q84gT0",
+  authDomain: "lifeinwarsaw-rekrutacje.firebaseapp.com",
+  projectId: "lifeinwarsaw-rekrutacje",
+  storageBucket: "lifeinwarsaw-rekrutacje.firebasestorage.app",
+  messagingSenderId: "248705292747",
+  appId: "1:248705292747:web:b4fcb3f538afc15129fe4e"
+};
+const SITE_URL = "https://rekrutacjeliw.vercel.app"; 
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null;
+let currentRecruitmentId = null;
+let questions = [];
+
+function showView(id) {
+  ['login-view','loading-view','forbidden-view','dashboard-view','editor-view','submissions-view'].forEach(v => {
+    document.getElementById(v).classList.toggle('hidden', v !== id);
+  });
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    currentUser = null;
+    document.getElementById('user-box').classList.add('hidden');
+    showView('login-view');
+    return;
+  }
+  currentUser = user;
+  document.getElementById('user-email').textContent = user.email;
+  document.getElementById('user-box').classList.remove('hidden');
+  showView('loading-view');
+
+  try {
+    const adminDoc = await getDoc(doc(db, 'admins', user.uid));
+    if (!adminDoc.exists()) { showView('forbidden-view'); return; }
+    await loadDashboard();
+    showView('dashboard-view');
+  } catch (e) {
+    console.error(e);
+    showView('forbidden-view');
+  }
+});
+
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.classList.add('hidden');
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    errEl.textContent = 'Nieprawidłowy e-mail lub hasło.';
+    errEl.classList.remove('hidden');
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+document.getElementById('forbidden-logout-btn').addEventListener('click', () => signOut(auth));
+
+async function loadDashboard() {
+  const listEl = document.getElementById('recruitments-list');
+  listEl.innerHTML = '<p class="text-sm text-slate-400">Wczytywanie...</p>';
+  const snap = await getDocs(query(collection(db, 'recruitments'), orderBy('createdAt', 'desc')));
+  if (snap.empty) { listEl.innerHTML = '<p class="text-sm text-slate-400">Brak rekrutacji. Utwórz pierwszą.</p>'; return; }
+  listEl.innerHTML = '';
+  snap.forEach(d => {
+    const r = d.data();
+    const card = document.createElement('div');
+    card.className = 'light-glass-card rounded-2xl p-5 flex items-center justify-between cursor-pointer hover:border-red-300';
+    card.innerHTML = `
+      <div>
+        <p class="font-bold text-slate-900">${escHtml(r.title || '(bez tytułu)')}</p>
+        <span class="badge ${r.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}">${r.status === 'active' ? 'Aktywna' : 'Zakończona'}</span>
+      </div>
+      <i class="fa-solid fa-chevron-right text-slate-400"></i>`;
+    card.addEventListener('click', () => openSubmissions(d.id));
+    listEl.appendChild(card);
+  });
+}
+
+document.getElementById('new-recruitment-btn').addEventListener('click', () => openEditor());
+document.getElementById('back-to-dashboard').addEventListener('click', async () => { await loadDashboard(); showView('dashboard-view'); });
+document.getElementById('back-to-dashboard-2').addEventListener('click', async () => { await loadDashboard(); showView('dashboard-view'); });
+
+function openEditor() {
+  currentRecruitmentId = null;
+  questions = [];
+  document.getElementById('ed-title').value = '';
+  document.getElementById('ed-desc').value = '';
+  document.getElementById('ed-email').checked = false;
+  document.getElementById('ed-roblox').checked = false;
+  document.getElementById('ed-discord').checked = false;
+  document.getElementById('ed-enddate').value = '';
+  document.getElementById('ed-status').value = 'active';
+  document.getElementById('ed-file-mode').value = 'disabled';
+  document.getElementById('ed-file-max').value = 5;
+  renderQuestionsEditor();
+  showView('editor-view');
+}
+
+document.getElementById('add-question-btn').addEventListener('click', () => {
+  questions.push({ type: 'short', text: '', required: false, options: ['', ''], scaleMin: 1, scaleMax: 5 });
+  renderQuestionsEditor();
+});
+
+function renderQuestionsEditor() {
+  const wrap = document.getElementById('questions-editor');
+  wrap.innerHTML = '';
+  questions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'border border-slate-200 rounded-xl p-4 space-y-3';
+    div.innerHTML = `
+      <div class="flex gap-2">
+        <input class="field-input flex-1" placeholder="Treść pytania" value="${escAttr(q.text)}" data-role="text">
+        <select class="field-input w-40" data-role="type">
+          <option value="short" ${q.type==='short'?'selected':''}>Krótka odpowiedź</option>
+          <option value="long" ${q.type==='long'?'selected':''}>Długa odpowiedź</option>
+          <option value="abcd" ${q.type==='abcd'?'selected':''}>Wybór (ABCD)</option>
+          <option value="scale" ${q.type==='scale'?'selected':''}>Skala</option>
+        </select>
+        <label class="flex items-center gap-1 text-xs whitespace-nowrap"><input type="checkbox" data-role="required" class="accent-red-600" ${q.required?'checked':''}> wymagane</label>
+        <button class="text-red-500 hover:text-red-700" data-role="remove"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <div data-role="extra"></div>
+    `;
+    wrap.appendChild(div);
+
+    const extra = div.querySelector('[data-role="extra"]');
+    renderExtra(extra, q);
+
+    div.querySelector('[data-role="text"]').addEventListener('input', e => q.text = e.target.value);
+    div.querySelector('[data-role="required"]').addEventListener('change', e => q.required = e.target.checked);
+    div.querySelector('[data-role="type"]').addEventListener('change', e => { q.type = e.target.value; renderExtra(extra, q); });
+    div.querySelector('[data-role="remove"]').addEventListener('click', () => { questions.splice(i, 1); renderQuestionsEditor(); });
+  });
+}
+
+function renderExtra(container, q) {
+  if (q.type === 'abcd') {
+    container.innerHTML = `<div class="space-y-2" data-role="opts"></div>
+      <button class="btn-secondary text-xs" data-role="add-opt"><i class="fa-solid fa-plus mr-1"></i>Dodaj opcję</button>`;
+    const optsWrap = container.querySelector('[data-role="opts"]');
+    function renderOpts() {
+      optsWrap.innerHTML = '';
+      q.options.forEach((opt, oi) => {
+        const row = document.createElement('div');
+        row.className = 'flex gap-2';
+        row.innerHTML = `<input class="field-input" value="${escAttr(opt)}" placeholder="Opcja ${oi+1}">
+          <button class="text-slate-400 hover:text-red-600"><i class="fa-solid fa-xmark"></i></button>`;
+        row.querySelector('input').addEventListener('input', e => q.options[oi] = e.target.value);
+        row.querySelector('button').addEventListener('click', () => { q.options.splice(oi, 1); renderOpts(); });
+        optsWrap.appendChild(row);
+      });
+    }
+    renderOpts();
+    container.querySelector('[data-role="add-opt"]').addEventListener('click', () => {
+      if (q.options.length >= 10) return;
+      q.options.push('');
+      renderOpts();
+    });
+  } else if (q.type === 'scale') {
+    container.innerHTML = `<div class="flex items-center gap-3 text-sm">
+      <span>Skala:</span>
+      <select data-role="scale-type" class="field-input w-32">
+        <option value="5" ${q.scaleMax===5?'selected':''}>1 - 5</option>
+        <option value="10" ${q.scaleMax===10?'selected':''}>1 - 10</option>
+      </select>
+    </div>`;
+    container.querySelector('[data-role="scale-type"]').addEventListener('change', e => {
+      q.scaleMin = 1;
+      q.scaleMax = parseInt(e.target.value, 10);
+    });
+  } else {
+    container.innerHTML = '';
+  }
+}
+
+document.getElementById('save-recruitment-btn').addEventListener('click', async () => {
+  const title = document.getElementById('ed-title').value.trim();
+  if (!title) { alert('Podaj tytuł rekrutacji.'); return; }
+
+  const fileMode = document.getElementById('ed-file-mode').value;
+  const enddateVal = document.getElementById('ed-enddate').value;
+
+  const cleanQuestions = questions
+    .filter(q => q.text.trim() !== '')
+    .map(q => ({
+      type: q.type,
+      text: q.text.trim(),
+      required: !!q.required,
+      options: q.type === 'abcd' ? q.options.filter(o => o.trim() !== '') : [],
+      scaleMin: q.type === 'scale' ? 1 : null,
+      scaleMax: q.type === 'scale' ? q.scaleMax : null
+    }));
+
+  const payload = {
+    title,
+    description: document.getElementById('ed-desc').value.trim(),
+    collectEmail: document.getElementById('ed-email').checked,
+    collectRobloxNick: document.getElementById('ed-roblox').checked,
+    collectDiscordNick: document.getElementById('ed-discord').checked,
+    questions: cleanQuestions,
+    fileUpload: {
+      enabled: fileMode !== 'disabled',
+      required: fileMode === 'required',
+      maxFiles: Math.min(parseInt(document.getElementById('ed-file-max').value, 10) || 5, 15)
+    },
+    status: document.getElementById('ed-status').value,
+    endDate: enddateVal ? new Date(enddateVal).toISOString() : null,
+    createdBy: currentUser.uid,
+    createdAt: serverTimestamp()
+  };
+
+  const ref = await addDoc(collection(db, 'recruitments'), payload);
+  await loadDashboard();
+  openSubmissions(ref.id);
+});
+
+async function openSubmissions(recruitmentId) {
+  currentRecruitmentId = recruitmentId;
+  const recSnap = await getDoc(doc(db, 'recruitments', recruitmentId));
+  const rec = recSnap.data();
+  document.getElementById('sub-rec-title').textContent = rec.title;
+  const link = `${SITE_URL}/r/${recruitmentId}`;
+  document.getElementById('sub-rec-link').textContent = link;
+
+  document.getElementById('copy-link-btn').onclick = () => {
+    navigator.clipboard.writeText(link);
+    const btn = document.getElementById('copy-link-btn');
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Skopiowano';
+    setTimeout(() => btn.innerHTML = original, 1500);
+  };
+
+  document.getElementById('end-now-btn').onclick = async () => {
+    if (!confirm('Zakończyć rekrutację natychmiast? Formularz przestanie przyjmować zgłoszenia.')) return;
+    await updateDoc(doc(db, 'recruitments', recruitmentId), { status: 'ended' });
+    alert('Rekrutacja została zakończona.');
+  };
+
+  await loadSubmissions(recruitmentId);
+  showView('submissions-view');
+}
+
+async function loadSubmissions(recruitmentId) {
+  const listEl = document.getElementById('submissions-list');
+  listEl.innerHTML = '<p class="text-sm text-slate-400">Wczytywanie zgłoszeń...</p>';
+  const snap = await getDocs(query(collection(db, 'submissions'), where('recruitmentId', '==', recruitmentId), orderBy('submittedAt', 'desc')));
+  if (snap.empty) { listEl.innerHTML = '<p class="text-sm text-slate-400">Brak zgłoszeń.</p>'; return; }
+
+  listEl.innerHTML = '';
+  snap.forEach(d => {
+    const s = d.data();
+    const card = document.createElement('div');
+    card.className = 'light-glass-card rounded-2xl p-5 space-y-3';
+
+    const answersHtml = Object.values(s.answers || {}).map(a =>
+      `<div class="text-sm"><span class="font-semibold text-slate-700">${escHtml(a.text)}:</span> <span class="text-slate-600">${escHtml(String(a.value))}</span></div>`
+    ).join('');
+
+    const filesHtml = (s.files || []).map(f =>
+      `<a href="${f.url}" target="_blank" class="inline-flex items-center gap-1 text-xs bg-slate-100 rounded-lg px-2 py-1 mr-1 mb-1 hover:bg-slate-200"><i class="fa-solid fa-paperclip"></i>${escHtml(f.name)}</a>`
+    ).join('');
+
+    const statusBadge = s.status === 'accepted'
+      ? '<span class="badge bg-emerald-100 text-emerald-700">Zaakceptowane</span>'
+      : s.status === 'rejected'
+      ? '<span class="badge bg-red-100 text-red-700">Odrzucone</span>'
+      : '<span class="badge bg-amber-100 text-amber-700">Oczekujące</span>';
+
+    card.innerHTML = `
+      <div class="flex items-start justify-between flex-wrap gap-2">
+        <div>
+          <p class="font-bold text-slate-900">${escHtml(s.email || s.discordNick || s.robloxNick || d.id)}</p>
+          <p class="text-xs text-slate-400">ID zgłoszenia: ${d.id}</p>
+        </div>
+        ${statusBadge}
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs text-slate-500">
+        ${s.email ? `<div><i class="fa-solid fa-envelope mr-1"></i>${escHtml(s.email)}</div>` : ''}
+        ${s.robloxNick ? `<div><i class="fa-solid fa-cube mr-1"></i>${escHtml(s.robloxNick)}</div>` : ''}
+        ${s.discordNick ? `<div><i class="fa-brands fa-discord mr-1"></i>${escHtml(s.discordNick)}</div>` : ''}
+      </div>
+      <div class="space-y-1 pt-1">${answersHtml}</div>
+      ${filesHtml ? `<div class="pt-1">${filesHtml}</div>` : ''}
+      <div class="flex gap-2 pt-2" data-role="actions">
+        <button class="btn-primary text-sm" data-role="accept"><i class="fa-solid fa-check mr-1"></i>Akceptuj</button>
+        <button class="btn-secondary text-sm bg-red-100 text-red-700 hover:bg-red-200" data-role="reject"><i class="fa-solid fa-xmark mr-1"></i>Odrzuć</button>
+      </div>
+    `;
+
+    if (s.status !== 'pending') {
+      card.querySelector('[data-role="actions"]').remove();
+    } else {
+      card.querySelector('[data-role="accept"]').addEventListener('click', () => decide(d.id, 'accepted', card));
+      card.querySelector('[data-role="reject"]').addEventListener('click', () => decide(d.id, 'rejected', card));
+    }
+
+    listEl.appendChild(card);
+  });
+}
+
+async function decide(submissionId, decision, cardEl) {
+  const label = decision === 'accepted' ? 'zaakceptować' : 'odrzucić';
+  if (!confirm(`Czy na pewno chcesz ${label} to zgłoszenie? Zostanie wysłany e-mail z decyzją.`)) return;
+
+  const idToken = await currentUser.getIdToken();
+  try {
+    const res = await fetch('/api/decision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, submissionId, decision })
+    });
+    if (!res.ok) throw new Error('request failed');
+    await loadSubmissions(currentRecruitmentId);
+  } catch (e) {
+    console.error(e);
+    alert('Nie udało się zapisać decyzji. Spróbuj ponownie.');
+  }
+}
+
+function escHtml(s){ const d=document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+function escAttr(s){ return (s ?? '').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
