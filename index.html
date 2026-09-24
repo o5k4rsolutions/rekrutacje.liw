@@ -1,1 +1,311 @@
-tu powstaje stronka
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life in Warsaw - Rekrutacja</title>
+<link rel="icon" type="image/x-icon" href="liw-content/liw_zakoch-2.svg">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-light.ttf') format('truetype');font-weight:300;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-medium.ttf') format('truetype');font-weight:500;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-bold.ttf') format('truetype');font-weight:700;}
+  @font-face{font-family:'Engram Warsaw';src:url('https://lifeinwarsaw.vercel.app/liw-content/engram-warsaw-black.ttf') format('truetype');font-weight:900;}
+  body{font-family:'Engram Warsaw',sans-serif;background:radial-gradient(circle at top,#f8fafc 0%,#e2e8f0 100%);color:#1e293b;min-height:100vh;}
+  .light-glass-card{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(226,232,240,.8);box-shadow:0 10px 25px -5px rgba(0,0,0,.05);}
+  .field-input{width:100%;padding:.75rem 1rem;border-radius:.75rem;border:1px solid #e2e8f0;background:#fff;font-size:.95rem;}
+  .field-input:focus{outline:none;border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.12);}
+  .spinner{border:3px solid #e2e8f0;border-top-color:#dc2626;border-radius:50%;width:2.5rem;height:2.5rem;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .file-chip{display:flex;align-items:center;justify-content:space-between;background:#f1f5f9;border-radius:.6rem;padding:.4rem .7rem;font-size:.8rem;}
+</style>
+</head>
+<body class="flex flex-col antialiased">
+
+<header class="w-full py-6 px-4 md:px-12 flex items-center justify-center border-b border-slate-200 bg-white/70 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+  <img src="https://lifeinwarsaw.vercel.app/liw-content/image-3.svg" alt="Life in Warsaw" class="h-10 w-auto filter brightness-0" onerror="this.src='https://placehold.co/150x50/333/fff?text=Life+In+Warsaw'">
+</header>
+
+<main class="flex-grow container mx-auto px-4 py-12 md:py-16 max-w-2xl w-full">
+
+  <div id="loading-state" class="flex flex-col items-center justify-center py-24 space-y-4">
+    <div class="spinner"></div>
+    <p class="text-slate-500 text-sm">Wczytywanie rekrutacji...</p>
+  </div>
+
+  <div id="notfound-state" class="hidden light-glass-card rounded-2xl p-10 text-center space-y-3">
+    <i class="fa-solid fa-circle-exclamation text-3xl text-red-600"></i>
+    <h2 class="text-xl font-bold">Nie znaleziono rekrutacji</h2>
+    <p class="text-slate-500 text-sm">Sprawdź, czy link jest poprawny.</p>
+  </div>
+
+  <div id="ended-state" class="hidden light-glass-card rounded-2xl p-10 text-center space-y-3">
+    <i class="fa-solid fa-lock text-3xl text-red-600"></i>
+    <h2 class="text-xl font-bold text-slate-900">Rekrutacja o tytule: <span id="ended-title"></span> została zakończona</h2>
+    <p class="text-slate-500 text-sm">Dziękujemy za zainteresowanie. Nabór na tę rekrutację nie jest już aktywny.</p>
+  </div>
+
+  <div id="success-state" class="hidden light-glass-card rounded-2xl p-10 text-center space-y-4">
+    <i class="fa-solid fa-circle-check text-4xl text-emerald-600"></i>
+    <h2 class="text-xl font-bold text-slate-900">Zgłoszenie zostało wysłane!</h2>
+    <p class="text-slate-600 text-sm">Numer Twojego zgłoszenia:</p>
+    <div class="text-2xl font-black tracking-widest text-red-600" id="success-id"></div>
+    <p class="text-slate-500 text-xs">Zachowaj ten numer — otrzymasz go też na maila (jeśli podałeś adres).</p>
+  </div>
+
+  <form id="recruitment-form" class="hidden space-y-6">
+    <div class="light-glass-card rounded-2xl p-8 space-y-2">
+      <h1 class="text-2xl md:text-3xl font-black text-slate-900" id="rec-title"></h1>
+      <p class="text-slate-500 text-sm" id="rec-desc"></p>
+    </div>
+
+    <div id="static-fields" class="light-glass-card rounded-2xl p-8 space-y-5"></div>
+    <div id="dynamic-questions" class="space-y-5"></div>
+    <div id="file-section" class="light-glass-card rounded-2xl p-8 space-y-3 hidden"></div>
+
+    <div id="form-error" class="hidden text-red-600 text-sm font-medium px-2"></div>
+
+    <button type="submit" id="submit-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-red-600/20">
+      Wyślij zgłoszenie
+    </button>
+  </form>
+</main>
+
+<footer class="w-full py-6 text-center text-xs text-slate-400">© 2026 Life in Warsaw</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, collection, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyBsqvahMIgg4TcCdKNBWn85AUBa0q84gT0",
+  authDomain: "lifeinwarsaw-rekrutacje.firebaseapp.com",
+  projectId: "lifeinwarsaw-rekrutacje",
+  storageBucket: "lifeinwarsaw-rekrutacje.firebasestorage.app",
+  messagingSenderId: "248705292747",
+  appId: "1:248705292747:web:b4fcb3f538afc15129fe4e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+function getRecruitmentId() {
+  const path = window.location.pathname;
+  const m = path.match(/\/r\/([^\/?#]+)/);
+  if (m) return decodeURIComponent(m[1]);
+  const params = new URLSearchParams(window.location.search);
+  return params.get('id');
+}
+
+function genSubmissionId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function show(id) {
+  ['loading-state','notfound-state','ended-state','success-state','recruitment-form'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+let recruitment = null;
+let recruitmentId = null;
+
+async function init() {
+  recruitmentId = getRecruitmentId();
+  if (!recruitmentId) { show('notfound-state'); return; }
+
+  try {
+    const snap = await getDoc(doc(db, 'recruitments', recruitmentId));
+    if (!snap.exists()) { show('notfound-state'); return; }
+    recruitment = snap.data();
+  } catch (e) {
+    console.error(e);
+    show('notfound-state');
+    return;
+  }
+
+  const now = new Date();
+  const endDate = recruitment.endDate ? new Date(recruitment.endDate) : null;
+  const isEnded = recruitment.status === 'ended' || (endDate && now > endDate);
+
+  if (isEnded) {
+    document.getElementById('ended-title').textContent = recruitment.title || '';
+    show('ended-state');
+    return;
+  }
+
+  renderForm();
+  show('recruitment-form');
+}
+
+function renderForm() {
+  document.getElementById('rec-title').textContent = recruitment.title || '';
+  document.getElementById('rec-desc').textContent = recruitment.description || '';
+
+  const staticWrap = document.getElementById('static-fields');
+  let staticHtml = '';
+  if (recruitment.collectEmail) {
+    staticHtml += `<div><label class="text-sm font-semibold text-slate-700 mb-1 block">Adres e-mail *</label>
+      <input required type="email" name="email" class="field-input" placeholder="ty@przyklad.com"></div>`;
+  }
+  if (recruitment.collectRobloxNick) {
+    staticHtml += `<div><label class="text-sm font-semibold text-slate-700 mb-1 block">Nick Roblox *</label>
+      <input required type="text" name="robloxNick" class="field-input" placeholder="Twój nick na Roblox"></div>`;
+  }
+  if (recruitment.collectDiscordNick) {
+    staticHtml += `<div><label class="text-sm font-semibold text-slate-700 mb-1 block">Nick Discord *</label>
+      <input required type="text" name="discordNick" class="field-input" placeholder="np. uzytkownik"></div>`;
+  }
+  staticWrap.innerHTML = staticHtml || '';
+  if (!staticHtml) staticWrap.classList.add('hidden');
+
+  const qWrap = document.getElementById('dynamic-questions');
+  const questions = recruitment.questions || [];
+  qWrap.innerHTML = questions.map((q, i) => {
+    const req = q.required ? 'required' : '';
+    const reqStar = q.required ? ' *' : '';
+    let inner = '';
+    if (q.type === 'short') {
+      inner = `<input ${req} type="text" name="q_${i}" class="field-input" maxlength="300">`;
+    } else if (q.type === 'long') {
+      inner = `<textarea ${req} name="q_${i}" rows="5" class="field-input" maxlength="4000"></textarea>`;
+    } else if (q.type === 'abcd') {
+      inner = (q.options || []).map((opt, oi) => `
+        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-red-300">
+          <input ${req} type="radio" name="q_${i}" value="${escAttr(opt)}" class="accent-red-600 w-4 h-4">
+          <span class="text-sm">${escHtml(opt)}</span>
+        </label>`).join('');
+      inner = `<div class="space-y-2">${inner}</div>`;
+    } else if (q.type === 'scale') {
+      const min = q.scaleMin || 1, max = q.scaleMax || 5;
+      let btns = '';
+      for (let v = min; v <= max; v++) {
+        btns += `<label class="flex-1 text-center">
+          <input ${req} type="radio" name="q_${i}" value="${v}" class="peer sr-only">
+          <div class="peer-checked:bg-red-600 peer-checked:text-white peer-checked:border-red-600 border border-slate-200 rounded-xl py-2 cursor-pointer text-sm font-semibold transition">${v}</div>
+        </label>`;
+      }
+      inner = `<div class="flex gap-2">${btns}</div>`;
+    }
+    return `<div class="light-glass-card rounded-2xl p-8 space-y-3">
+      <label class="text-sm font-semibold text-slate-700 block">${escHtml(q.text)}${reqStar}</label>
+      ${inner}
+    </div>`;
+  }).join('');
+
+  const fu = recruitment.fileUpload || { enabled: false };
+  const fileSection = document.getElementById('file-section');
+  if (fu.enabled) {
+    fileSection.classList.remove('hidden');
+    const max = Math.min(fu.maxFiles || 15, 15);
+    fileSection.innerHTML = `
+      <label class="text-sm font-semibold text-slate-700 block">Załączniki${fu.required ? ' *' : ''} <span class="text-slate-400 font-normal">(maks. ${max} plików)</span></label>
+      <input type="file" id="file-input" multiple class="field-input" ${fu.required ? 'data-required="true"' : ''}>
+      <div id="file-list" class="space-y-1"></div>
+    `;
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      const listEl = document.getElementById('file-list');
+      if (files.length > max) {
+        showError(`Możesz załączyć maksymalnie ${max} plików.`);
+        e.target.value = '';
+        listEl.innerHTML = '';
+        return;
+      }
+      listEl.innerHTML = files.map(f => `<div class="file-chip"><span>${escHtml(f.name)}</span><span class="text-slate-400">${(f.size/1024/1024).toFixed(2)} MB</span></div>`).join('');
+    });
+  }
+
+  document.getElementById('recruitment-form').addEventListener('submit', onSubmit);
+}
+
+function escHtml(s){ const d=document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+function escAttr(s){ return (s ?? '').replace(/"/g,'&quot;'); }
+
+function showError(msg) {
+  const el = document.getElementById('form-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function clearError() { document.getElementById('form-error').classList.add('hidden'); }
+
+async function onSubmit(e) {
+  e.preventDefault();
+  clearError();
+  const btn = document.getElementById('submit-btn');
+  const form = e.target;
+  const fd = new FormData(form);
+
+  const fu = recruitment.fileUpload || { enabled: false };
+  const fileInput = document.getElementById('file-input');
+  const files = fileInput ? Array.from(fileInput.files) : [];
+  if (fu.enabled && fu.required && files.length === 0) {
+    showError('Załączenie przynajmniej jednego pliku jest wymagane.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Wysyłanie...';
+
+  try {
+    const submissionId = genSubmissionId();
+
+    const answers = {};
+    (recruitment.questions || []).forEach((q, i) => {
+      answers[i] = { text: q.text, type: q.type, value: fd.get(`q_${i}`) || '' };
+    });
+
+    const fileUrls = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const path = `submissions/${recruitmentId}/${submissionId}/${i}_${f.name}`;
+      const sref = ref(storage, path);
+      await uploadBytes(sref, f);
+      const url = await getDownloadURL(sref);
+      fileUrls.push({ name: f.name, url });
+    }
+
+    const email = fd.get('email') || '';
+
+    await setDoc(doc(collection(db, 'submissions'), submissionId), {
+      recruitmentId,
+      email,
+      robloxNick: fd.get('robloxNick') || '',
+      discordNick: fd.get('discordNick') || '',
+      answers,
+      files: fileUrls,
+      status: 'pending',
+      submittedAt: serverTimestamp()
+    });
+
+    try {
+      await fetch('/api/submit-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId, recruitmentId, email, title: recruitment.title })
+      });
+    } catch (mailErr) {
+      console.warn('Nie udało się wysłać maila potwierdzającego:', mailErr);
+    }
+
+    document.getElementById('success-id').textContent = submissionId;
+    show('success-state');
+  } catch (err) {
+    console.error(err);
+    showError('Wystąpił błąd podczas wysyłania zgłoszenia. Spróbuj ponownie.');
+    btn.disabled = false;
+    btn.textContent = 'Wyślij zgłoszenie';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
